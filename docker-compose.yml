@@ -1,0 +1,51 @@
+version: "3"
+services:
+    gitlab:
+        image: gitlab/gitlab-ce:latest
+        container_name: knut-gitlab
+        hostname: 'gitlab.mydomain.fr'
+        ports:
+            - '2822:22'
+        expose:
+            - '80'
+        volumes:
+            - '/srv/gitlab-docker/config:/etc/gitlab'
+            - '/srv/gitlab-docker/logs:/var/log/gitlab'
+            - '/srv/gitlab-docker/data:/var/opt/gitlab'
+        restart: always
+        environment:
+            - GITLAB_OMNIBUS_CONFIG=
+                external_url "https://gitlab.mydomain.fr";
+                nginx['listen_https'] = false;
+                nginx['proxy_set_headers'] = {
+                "X-Forwarded-Proto" => "https",
+                "X-Forwarded-Ssl" => "on"
+                };
+                nginx['listen_port'] = 80;
+                gitlab_rails['gitlab_shell_ssh_port'] = 2822;
+                gitlab_rails['smtp_enable'] = true;
+                gitlab_rails['smtp_address'] = "smtp.gmail.com";
+                gitlab_rails['smtp_port'] = 587;
+                gitlab_rails['smtp_user_name'] = "";
+                gitlab_rails['smtp_password'] = "";
+                gitlab_rails['smtp_authentication'] = "login";
+                gitlab_rails['smtp_enable_starttls_auto'] = true;
+                gitlab_rails['smtp_tls'] = false;
+                gitlab_rails['smtp_openssl_verify_mode'] = 'peer';
+            - VIRTUAL_HOST=gitlab.mydomain.fr
+            - LETSENCRYPT_HOST=gitlab.mydomain.fr
+            - LETSENCRYPT_EMAIL=your@gmail.com
+
+    gitlab-runner:
+        image: gitlab/gitlab-runner:latest
+        container_name: knut-gitlab-runner
+        restart: always
+        volumes:
+          - '/srv/gitlab-runner/config:/etc/gitlab-runner'
+          - '/var/run/docker.sock:/var/run/docker.sock'
+
+
+networks:
+    default:
+        external:
+            name: knutech_main
